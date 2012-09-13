@@ -1,9 +1,6 @@
 from collections import deque
 from PIL import Image, ImageStat, ImageDraw
-import sys
 import math
-
-GROUP_THRESH = 100
 
 class QuadTreeNode:
 	def __init__(self, image, x1, y1, x2, y2, parent=None): # all should be ints
@@ -96,67 +93,38 @@ def generate_quad_tree(image, thresh, minsize):
 
    return rootNode
 
-def expand_group_w(start_node, group):
+def expand_group(ref_node, root, group_thresh):
    q = deque()
-   q.append(start_node)
+   q.append(root)
+   group = ref_node.group # must not be None
+
    while len(q) > 0:
       node = q.popleft()
-      if node.ne_child == None:# and node.group == None:
-	 diff = [0.,0.,0.]
-	 for i in range(3): diff[i] = node.mean[i] - group.mean[i]
-	 if magnitude_3d_euclid(diff) < GROUP_THRESH:
+      if node == ref_node: # or node.group != None:
+	 continue
+      # check for "collision"
+      if node.y2 < ref_node.y1 - 1 or \
+	 node.y1 > ref_node.y2 + 1 or \
+	 node.x2 < ref_node.x1 - 1 or \
+	 node.x1 > ref_node.x2 + 1:
+	    continue
+      if node.ne_child == None:
+	 # node touches the ref_node, check if it should be part of the group
+	 mean_diff = [0., 0., 0.]
+	 for i in range(3):
+	    mean_diff[i] = group.mean[i] - node.mean[i]
+
+	 if magnitude_3d_euclid(mean_diff) < group_thresh:
 	    group.add_node(node)
 	    group.refresh_stats()
       else:
-	 for child in [node.nw_child, node.sw_child]:
-	    q.append(child)
-      
-def expand_group_e(start_node, group):
-   q = deque()
-   q.append(start_node)
-   while len(q) > 0:
-      node = q.popleft()
-      if node.ne_child == None: # and node.group == None:
-	 diff = [0.,0.,0.]
-	 for i in range(3): diff[i] = node.mean[i] - group.mean[i]
-	 if magnitude_3d_euclid(diff) < GROUP_THRESH:
-	    group.add_node(node)
-	    group.refresh_stats()
-      else:
-	 for child in [node.ne_child, node.se_child]:
-	    q.append(child)
-def expand_group_n(start_node, group):
-   q = deque()
-   q.append(start_node)
-   while len(q) > 0:
-      node = q.popleft()
-      if node.ne_child == None:# and node.group == None: 
-	 diff = [0.,0.,0.]
-	 for i in range(3): diff[i] = node.mean[i] - group.mean[i]
-	 if magnitude_3d_euclid(diff) < GROUP_THRESH:
-	    group.add_node(node)
-	    group.refresh_stats()
-      else:
-	 for child in [node.nw_child, node.ne_child]:
-	    q.append(child)
-def expand_group_s(start_node, group):
-   #import pdb; pdb.set_trace()
-   q = deque()
-   q.append(start_node)
-   while len(q) > 0:
-      node = q.popleft()
-      if node.ne_child == None:# and node.group == None:
-	 diff = [0.,0.,0.]
-	 for i in range(3): diff[i] = node.mean[i] - group.mean[i]
-	 if magnitude_3d_euclid(diff) < GROUP_THRESH:
-	    group.add_node(node)
-	    group.refresh_stats()
-      else:
-	 for child in [node.sw_child, node.se_child]:
+         for child in [node.nw_child, node.ne_child, node.se_child, node.sw_child]:
 	    q.append(child)
 
+
+
 '''Output a list of node groups'''
-def generate_leaf_groups(root):
+def generate_leaf_groups(root, group_thresh):
    groups = []
    q = deque()
    q.append(root)
@@ -166,33 +134,16 @@ def generate_leaf_groups(root):
       node = q.popleft()
       if node.ne_child == None:
 	 if node.parent == None:
-	    pass
+	    pass # root node
 	 else:
 	    if node.group == None:
-	       group = NodeGroup()
+	       group = NodeGroup();
 	       group.add_node(node)
 	       group.refresh_stats()
-	       node.group = group
 	       groups.append(group)
-	    parent = node.parent
-	    group = node.group
-
-	    if node == node.parent.ne_child:
-	       expand_group_e(parent.nw_child, group)
-	       expand_group_n(parent.se_child, group)
-	    elif node == node.parent.nw_child:
-	       expand_group_w(parent.ne_child, group)
-	       expand_group_n(parent.sw_child, group)
-	    elif node == node.parent.sw_child:
-	       expand_group_s(parent.nw_child, group)
-	       expand_group_w(parent.se_child, group)
-	    elif node == node.parent.se_child:
-	       expand_group_e(parent.sw_child, group)
-	       expand_group_s(parent.ne_child, group)
-	       pass
-	    else:
-	       raise Exception("Could not find node in it's parents' children.")
+	       node.group = group
 	    
+	    expand_group(node, root, group_thresh)
       else:
 	 for child in [node.nw_child, node.ne_child, node.se_child, node.sw_child]:
 	    q.append(child)
@@ -239,43 +190,42 @@ def draw_group_colors(groups, size):
 if __name__ == '__main__':
     DEFAULT_THRESH = 1200
     DEFAULT_MINSIZE = 20
-    
-    def print_usage():
-        print '''usage:
-python ColorZoner.py <in_filename> <out_filename> [<color_threshold> [<min_region_size>]]
-default color_threshold: %s
-default min_region_size: %s
-NOTE: file will be saved in PNG format (hint hint.. use PNG extension)''' % (DEFAULT_THRESH, DEFAULT_MINSIZE)
-    
-    #get arguments
-    try:
-        in_filename = sys.argv[1]
-        out_filename = sys.argv[2]
-        
-        if len(sys.argv)>3:  thresh = int(sys.argv[3])
-        else: thresh = DEFAULT_THRESH
-         
-        if len(sys.argv)>4: min_size = int(sys.argv[4])
-        else: min_size = DEFAULT_MINSIZE
-    except:
-        print 'Error processing command line arguments!'
-        print_usage()
-        exit()
-    
-        
-    img = Image.open(in_filename)
-    print 'Generating quad tree on %s' % in_filename
-    root = generate_quad_tree(img, thresh, min_size)
+    DEFATUL_GROUP_THRESH = 75
+
+    import argparse
+    parser = argparse.ArgumentParser(description='ColorZoner for your pleasure')
+    parser.add_argument('in_file', metavar='IN_FILE', type=str,
+	  help='The input image file')
+    parser.add_argument('out_file', metavar='OUT_FILE', type=str,
+	  help='The output image file, should have .png extension')
+    parser.add_argument('-s', '--splitthresh', type=int, 
+	  default=1200,
+	  help="Threshold for splitting up the image into regions")
+    parser.add_argument('-m', '--minsize', type=int, default=20,
+	  help='Minimum dimension of squares to break the image down into')
+    parser.add_argument('-g', '--groupthresh', type=int, default=75,
+	  help='Threshold for joining groups together')
+
+    args = parser.parse_args()
+
+
+    img = Image.open(args.in_file)
+    print 'Generating quad tree on %s' % args.in_file
+    root = generate_quad_tree(img, args.splitthresh, args.minsize)
     print 'Drawing leaves...'
     out_img = draw_quadtree_leaf_colors(root, img.size)
     print 'Saving tree.png...'
+    out_img.save('tree.png','PNG')
     print 'Making leaf groups...'
-    groups = generate_leaf_groups(root)
+    groups = generate_leaf_groups(root, args.groupthresh)
     print 'Drawing groups...'
     out_img = draw_group_colors(groups, img.size)
     print 'Saving image...'
-    out_img.save(out_filename,'PNG')  
-    print 'Saved to %s' % out_filename
+    out_img.save(args.out_file,'PNG')  
+    print 'Saved to %s' % args.out_file
+
+    
+        
 
 
 
