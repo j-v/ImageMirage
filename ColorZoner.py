@@ -1,60 +1,26 @@
 from collections import deque
 from PIL import Image, ImageStat, ImageDraw
 import math
+import argparse
 
-class QuadTreeNode:
-	def __init__(self, image, x1, y1, x2, y2, parent=None): # all should be ints
-		self.x1 = x1
-		self.y1 = y1
-		self.x2 = x2
-		self.y2 = y2
+from QuadTree import QuadTreeNode, NodeGroup
 
-		self.parent = parent
-
-		self.ne_child = None
-		self.nw_child = None
-		self.se_child = None
-		self.sw_child = None
-
-		stats = ImageStat.Stat(image)
-		self.mean = stats.mean
-		self.var = stats.var
-
-		self.group = None
-
-class NodeGroup:
-   def __init__(self):
-      self.nodes = []
-      self.mean = [0., 0., 0.]
-      self.var = [0., 0., 0.]
-
-   def add_node(self, node):
-      node.group = self
-      self.nodes.append(node)
-
-   def refresh_stats(self):
-      mean_accum = [0., 0., 0.]
-      var_accum = [0., 0., 0.]
-      pix_accum = 0
-
-      # iterate through all nodes, do weighted summing
-      for node in self.nodes:
-	 pix = (node.y2-node.y1)*(node.x2-node.x1)
-	 pix_accum += pix
-	 for i in range(3):
-	    mean_accum[i] += node.mean[i] * pix
-	    var_accum[i] += node.var[i] * pix
-      
-      # normalization
-      for i in range(3):
-	 self.mean[i] = mean_accum[i] / float(pix_accum)
-	 self.var[i] = var_accum[i] / float(pix_accum)
-
-
-
+'''
+Calculate 3d euclidian magnitude of the vector v
+arg v: indexable of length 3
+'''
 def magnitude_3d_euclid(v):
    return math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
 
+''' 
+Split an image into a quad tree, splitting conditionally based on variance in color
+at each node.
+Results in a tree, whose leaves can be used to draw a kind of pixelized version of 
+the original.
+arg image
+arg thresh - Variance threshold for conditional node expansion 
+arg minsize - Minimum size of node, blockin node expansion
+'''
 def generate_quad_tree(image, thresh, minsize):
    width, height = image.size
    x1, y1, x2, y2 = 0, 0, width - 1, height - 1
@@ -65,34 +31,48 @@ def generate_quad_tree(image, thresh, minsize):
 
    while len(q) > 0:
       node = q.popleft()
-      # 
+      # Check minsize condition
       if node.x2 - node.x1 < minsize or node.y2 - node.y1 < minsize:
 	 continue
+      # Check thresh condition
       elif magnitude_3d_euclid(node.var) < thresh: 
 	 continue
       else:
 	 # expand node
-	 nw_image = image.crop( (node.x1, node.y1, 
-	    			(node.x1+node.x2)/2, (node.y1+node.y2)/2 ) )
-	 ne_image = image.crop( ((node.x1+node.x2)/2, node.y1, node.x2, (node.y1+node.y2)/2 ) )
-	 se_image = image.crop( ((node.x1+node.x2)/2, (node.y1+node.y2)/2 , node.x2, node.y2 ) )
-	 sw_image = image.crop( (node.x1, (node.y1+node.y2)/2 ,(node.x1+node.x2)/2, node.y2) )
+	 nw_image = image.crop( (
+		 node.x1, node.y1, 
+		 (node.x1+node.x2)/2, (node.y1+node.y2)/2 ) )
+	 ne_image = image.crop( (
+		 (node.x1+node.x2)/2, node.y1, 
+		 node.x2, (node.y1+node.y2)/2 ) )
+	 se_image = image.crop( 
+		((node.x1+node.x2)/2, (node.y1+node.y2)/2 , 
+		 node.x2, node.y2 ) )
+	 sw_image = image.crop( (node.x1, (node.y1+node.y2)/2 
+		 ,(node.x1+node.x2)/2, node.y2) )
 	 
 	 nw_image.load()
 	 ne_image.load()
 	 se_image.load()
 	 sw_image.load()
 
-	 node.nw_child = QuadTreeNode(nw_image, node.x1, node.y1, (node.x1+node.x2)/2, (node.y1+node.y2)/2, node)
-	 node.ne_child = QuadTreeNode(ne_image, (node.x1+node.x2)/2, node.y1, node.x2, (node.y1+node.y2)/2, node)
-	 node.se_child = QuadTreeNode(se_image, (node.x1+node.x2)/2, (node.y1+node.y2)/2 , node.x2, node.y2, node)
-	 node.sw_child = QuadTreeNode(sw_image, node.x1, (node.y1+node.y2)/2 ,(node.x1+node.x2)/2, node.y2, node)
+	 node.nw_child = QuadTreeNode(nw_image, node.x1, 
+			 node.y1, (node.x1+node.x2)/2, (node.y1+node.y2)/2, node)
+	 node.ne_child = QuadTreeNode(ne_image, (node.x1+node.x2)/2, 
+			 node.y1, node.x2, (node.y1+node.y2)/2, node)
+	 node.se_child = QuadTreeNode(se_image, (node.x1+node.x2)/2, 
+			 (node.y1+node.y2)/2 , node.x2, node.y2, node)
+	 node.sw_child = QuadTreeNode(sw_image, node.x1, 
+			 (node.y1+node.y2)/2 ,(node.x1+node.x2)/2, node.y2, node)
 
 	 for child in [node.nw_child, node.ne_child, node.se_child, node.sw_child]:
 	    q.append(child)
 
    return rootNode
 
+'''
+Helper function for generate_leaf_groups
+'''
 def expand_group(ref_node, root, group_thresh):
    q = deque()
    q.append(root)
@@ -120,8 +100,6 @@ def expand_group(ref_node, root, group_thresh):
       else:
          for child in [node.nw_child, node.ne_child, node.se_child, node.sw_child]:
 	    q.append(child)
-
-
 
 '''Output a list of node groups'''
 def generate_leaf_groups(root, group_thresh):
@@ -188,22 +166,21 @@ def draw_group_colors(groups, size):
 
 
 if __name__ == '__main__':
-    DEFAULT_THRESH = 1200
+    DEFAULT_SPLIT_THRESH = 1200
     DEFAULT_MINSIZE = 20
     DEFATUL_GROUP_THRESH = 75
 
-    import argparse
     parser = argparse.ArgumentParser(description='ColorZoner for your pleasure')
     parser.add_argument('in_file', metavar='IN_FILE', type=str,
 	  help='The input image file')
     parser.add_argument('out_file', metavar='OUT_FILE', type=str,
 	  help='The output image file, should have .png extension')
     parser.add_argument('-s', '--splitthresh', type=int, 
-	  default=1200,
+	  default=DEFAULT_SPLIT_THRESH,
 	  help="Threshold for splitting up the image into regions")
-    parser.add_argument('-m', '--minsize', type=int, default=20,
+    parser.add_argument('-m', '--minsize', type=int, default=DEFAULT_MINSIZE,
 	  help='Minimum dimension of squares to break the image down into')
-    parser.add_argument('-g', '--groupthresh', type=int, default=75,
+    parser.add_argument('-g', '--groupthresh', type=int, default=DEFATUL_GROUP_THRESH,
 	  help='Threshold for joining groups together')
 
     args = parser.parse_args()
@@ -223,13 +200,4 @@ if __name__ == '__main__':
     print 'Saving image...'
     out_img.save(args.out_file,'PNG')  
     print 'Saved to %s' % args.out_file
-
-    
-        
-
-
-
-
-
-   
 
