@@ -161,9 +161,8 @@ def draw_group_colors(groups, size):
 	 draw.rectangle([(node.x1, node.y1), (node.x2, node.y2)],
 			   outline=color,
 			   fill=color)
-
+ 
    return image
-
 
 if __name__ == '__main__':
     DEFAULT_SPLIT_THRESH = 1200

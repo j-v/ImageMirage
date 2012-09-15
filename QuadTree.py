@@ -1,4 +1,5 @@
-import ImageStat
+import Image, ImageStat
+import sys
 
 class QuadTreeNode:
 
@@ -49,4 +50,37 @@ class NodeGroup:
       for i in range(3):
 	 self.mean[i] = mean_accum[i] / float(pix_accum)
 	 self.var[i] = var_accum[i] / float(pix_accum)
+
+   def get_bounding_box(self):
+      # Get bounding box
+      x2, y2 = (0,0)
+      x1, y1 = (sys.maxint, sys.maxint)
+
+      for node in self.nodes:
+	 if node.x1 < x1: x1 = node.x1
+	 if node.y1 < y1: y1 = node.y1
+	 if node.x2 > x2: x2 = node.x2
+	 if node.y2 > y2: y2 = node.y2
+
+      return (x1,y1,x2,y2)
+      
+   def get_mask(self):
+      '''Create a mask image. Image will be as large as the blob's bounding box,
+      with each corresponding pixel either 0 or 255'''
+      x1, y1, x2, y2 = self.get_bounding_box()
+
+      # Initialize mask image
+      width = x2-x1+1
+      height = y2-y1+1
+      mask = Image.new('1', (width,height))
+
+      # Set pixels corresponding to nodes in group to 255
+      for node in self.nodes:
+	 node_width = node.x2 - node.x1
+	 node_height = node.y2 - node.y1
+	 for x in xrange(node_width):
+	    for y in xrange(node_height):
+	       mask.putpixel( (x+node.x1-x1, y+node.y1-y1), 255)
+
+      return mask
 
