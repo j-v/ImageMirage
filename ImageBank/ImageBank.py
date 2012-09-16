@@ -3,21 +3,14 @@
 import ImageStat, Image
 import os
 import shutil
+from ImageBankEntry import ImageBankEntry
 
 open_file = open
 
 IMAGEBANK_CSV_FILENAME = 'imagebank.csv'
-IMAGEBANK_CSV_HEADER = 'filename,width,height,mean,var'
+IMAGEBANK_CSV_HEADER = 'filename,width,height,meanr,meang,meanb,varr,varg,varb'
 IMAGEBANK_IMAGE_FORMAT = 'PNG'
 
-class ImageBankEntry:
-   def __init__(self, filename, width, height, mean, var):
-      '''Should not be called directly from outside this module'''
-      self.filename = filename
-      self.width = width
-      self.height = height
-      self.mean = mean
-      self.var = var
 
 class ImageBank:
    def __init__(self, directory):
@@ -26,6 +19,9 @@ class ImageBank:
       self.entries = []
 
    def remove_image(self, filename):
+      '''remove_image(str) -> None
+
+      Removes image with given filename from bank and DELETES FROM DISK'''
       for index,entry in enumerate(self.entries):
 	 if entry.filename == filename:
 	    self.entries.pop(index)
@@ -36,7 +32,7 @@ class ImageBank:
 	    os.remove(img_path)
 	    return
 
-      raise Exception("Image %s was not found in library")
+      raise Exception("Image %s was not found in library" % filename)
 
    def add_image(self, image, filename, stats=None):
       '''add_image(Image, str, str, ImageStat) -> None
@@ -53,7 +49,7 @@ class ImageBank:
       image.save(filepath, IMAGEBANK_IMAGE_FORMAT)
 
       width, height = image.size
-      entry = ImageBankEntry(filepath,width,height,stats.mean,stats.var)
+      entry = ImageBankEntry(filename,width,height,stats.mean,stats.var)
       self.entries.append(entry)
 
    def add_image_file(self, file_path):
@@ -91,14 +87,9 @@ class ImageBank:
 	 print csv_path
 	 f = open_file(csv_path, 'w')
 	 # write header
-	 f.writelines([IMAGEBANK_CSV_HEADER])
+	 f.write(IMAGEBANK_CSV_HEADER + os.linesep)
 	 # write data'
-	 f.writelines( ','.join(entry.filename,
-	    			str(entry.width),
-				str(entry.height),
-				str(entry.mean),
-				str(entry.var)) 
-				for entry in self.entries)
+	 f.writelines( entry.to_csv() + os.linesep for entry in self.entries)
       except IOError:
 	 print 'Error opening file or writing data'
       else:
@@ -111,17 +102,17 @@ class ImageBank:
 	 f = open_file(os.path.join(self.directory, IMAGEBANK_CSV_FILENAME), 'r')
 	 # check header
 	 header = f.readline()
-	 if header != IMAGEBANK_CSV_HEADER:
+	 if header.strip() != IMAGEBANK_CSV_HEADER:
 	    raise Exception("Incorrect header found in image bank file")
 	 # read data
 	 for line in f.readlines():
-	    filename, width, height, mean, var = line.strip().split(',')
+	    entry = ImageBankEntry.parse(line)
+
 	    # check for existence of file
-	    if not os.path.isfile(os.path.join(self.directory, filename)):
-	       print 'WARNING: %s not found, omitting from image bank' % filename
+	    if not os.path.isfile(os.path.join(self.directory, entry.filename)):
+	       print 'WARNING: Image %s not found, omitting from image bank' % filename
 	    else:
-	       entry = ImageBankEntry(filename,width,height,mean,var)
-	       entries.append(entry)
+	       self.entries.append(entry)
 
       except IOError:
 	 print 'Error opening file or reading data'
@@ -149,8 +140,8 @@ def open(directory):
       raise Exception("Path given is not a directory")
    csv_path = os.path.join(directory, IMAGEBANK_CSV_FILENAME)
    if not os.path.isfile(csv_path):
-      raise Exception("Image bank CSV data file not found")
-   
+      raise Exception("Image bank CSV data file not found in directory %s" % directory)
+
    imagebank = ImageBank(directory)
    imagebank.load()
 
