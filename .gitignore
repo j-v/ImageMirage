@@ -5,6 +5,9 @@
 *.*~
 *.sw[a-z]
 
+.ropeproject/*
+.backup/*
+
 # Compiled source #
 ###################
 *.com

@@ -1,6 +1,7 @@
 # TODO make better exceptions
 
-import ImageStat, Image
+import ImageStat
+import Image
 import os
 import shutil
 from ImageBankEntry import ImageBankEntry
@@ -22,7 +23,7 @@ class ImageBank:
         '''remove_image(str) -> None
 
         Removes image with given filename from bank and DELETES FROM DISK'''
-        for index,entry in enumerate(self.entries):
+        for index, entry in enumerate(self.entries):
             if entry.filename == filename:
                 self.entries.pop(index)
                 # delete file
@@ -40,7 +41,7 @@ class ImageBank:
         Takes a PIL image object, saves it to file and adds it to the bank'''
 
         # get stats
-        if stats == None:
+        if stats is None:
             stats = ImageStat.Stat(image)
         # save image to bank directory
         filepath = os.path.join(self.directory, filename)
@@ -49,18 +50,19 @@ class ImageBank:
         image.save(filepath, IMAGEBANK_IMAGE_FORMAT)
 
         width, height = image.size
-        entry = ImageBankEntry(filename,width,height,stats.mean,stats.var)
+        entry = ImageBankEntry(filename, width, height, stats.mean, stats.var)
         self.entries.append(entry)
 
     def add_image_file(self, file_path):
         '''add_image_file(str) -> None
-        
+
         Takes the path to an image file, copies the image to the bank
         directory, and adds it to the bank.'''
 
         # check file exists
         if not os.path.isfile(file_path):
-            raise Exception("File %s doesn't exist, not adding to image bank" % file_path)
+            raise Exception(
+                "File %s doesn't exist, not adding to image bank" % file_path)
         # check file doesn't already exist in image bank directory
         filename = os.path.basename(file_path)
         dest_path = os.path.join(self.directory, filename)
@@ -89,7 +91,7 @@ class ImageBank:
             # write header
             f.write(IMAGEBANK_CSV_HEADER + os.linesep)
             # write data'
-            f.writelines( entry.to_csv() + os.linesep for entry in self.entries)
+            f.writelines(entry.to_csv() + os.linesep for entry in self.entries)
         except IOError:
             print 'Error opening file or writing data'
         else:
@@ -99,7 +101,8 @@ class ImageBank:
     def load(self):
         '''Read the image_bank.csv file'''
         try:
-            f = open_file(os.path.join(self.directory, IMAGEBANK_CSV_FILENAME), 'r')
+            f = open_file(
+                os.path.join(self.directory, IMAGEBANK_CSV_FILENAME), 'r')
             # check header
             header = f.readline()
             if header.strip() != IMAGEBANK_CSV_HEADER:
@@ -110,7 +113,7 @@ class ImageBank:
 
                 # check for existence of file
                 if not os.path.isfile(os.path.join(self.directory, entry.filename)):
-                    print 'WARNING: Image %s not found, omitting from image bank' % filename
+                    print 'WARNING: Image %s not found, omitting from image bank' % self.filename
                 else:
                     self.entries.append(entry)
 
@@ -120,20 +123,22 @@ class ImageBank:
             print 'Loaded image bank'
             f.close()
 
+
 def new(directory):
-    '''Create a new image bank at the provided directory. The directory must 
+    '''Create a new image bank at the provided directory. The directory must
     already exist and should be empty.'''
     if not os.path.exists(directory):
         raise Exception("Directory does not exist")
     if not os.path.isdir(directory):
         raise Exception("Path given is not a directory")
-    if os.path.isfile(os.path.join(directory,IMAGEBANK_CSV_FILENAME)):
+    if os.path.isfile(os.path.join(directory, IMAGEBANK_CSV_FILENAME)):
         raise Exception("Image bank at %s already exists" % directory)
 
     imagebank = ImageBank(directory)
     imagebank.save()
 
     return imagebank
+
 
 def open(directory):
     '''Open an image bank at the specified directory. There must be a csv data file
@@ -144,7 +149,8 @@ def open(directory):
         raise Exception("Path given is not a directory")
     csv_path = os.path.join(directory, IMAGEBANK_CSV_FILENAME)
     if not os.path.isfile(csv_path):
-        raise Exception("Image bank CSV data file not found in directory %s" % directory)
+        raise Exception(
+            "Image bank CSV data file not found in directory %s" % directory)
 
     imagebank = ImageBank(directory)
     imagebank.load()
