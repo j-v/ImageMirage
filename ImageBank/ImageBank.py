@@ -121,6 +121,8 @@ class ImageBank:
 	 f.close()
 
 def new(directory):
+   '''Create a new image bank at the provided directory. The directory must 
+   already exist and should be empty.'''
    if not os.path.exists(directory):
       raise Exception("Directory does not exist")
    if not os.path.isdir(directory):
@@ -134,6 +136,8 @@ def new(directory):
    return imagebank
 
 def open(directory):
+   '''Open an image bank at the specified directory. There must be a csv data file
+   at the directory.'''
    if not os.path.exists(directory):
       raise Exception("Directory does not exist")
    if not os.path.isdir(directory):

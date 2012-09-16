@@ -7,10 +7,14 @@ from QuadTree import QuadTreeNode, NodeGroup
 
 '''
 Calculate 3d euclidian magnitude of the vector v
-arg v: indexable of length 3
+arg v: indexable of length 3 
 '''
+#TODO fix dox
 def magnitude_3d_euclid(v):
    return math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+
+def distance_3d_euclid(v1,v2):
+   return magnitude_3d_euclid(tuple(v2[i]-v1[i] for i in range(3)))
 
 ''' 
 Split an image into a quad tree, splitting conditionally based on variance in color
@@ -21,6 +25,7 @@ arg image
 arg thresh - Variance threshold for conditional node expansion 
 arg minsize - Minimum size of node, blockin node expansion
 '''
+#TODO fix dox
 def generate_quad_tree(image, thresh, minsize):
    width, height = image.size
    x1, y1, x2, y2 = 0, 0, width - 1, height - 1
@@ -159,6 +164,38 @@ def draw_group_colors(groups, size):
 			   fill=color)
  
    return image
+
+def get_pictures_for_groups(groups, image_bank):
+   '''get_pictures_for_groups(list(NodeGroup)) -> list(str)
+
+   returns a list of filenames, in the same order as the groups, 
+   corresponding to best fit for color'''
+
+   pic_list = []
+
+   # if image_bank has no entries
+   if len(image_bank.entries) == 0:
+      raise Exception("Image bank must contain at least one entry") # TODO
+
+   for group in groups:
+      best_file = None
+      best_dist = float('inf')
+      for entry in image_bank.entries:
+	 dist = distance_3d_euclid(group.mean, entry.mean)
+	 if dist < best_dist:
+	    best_file = entry.filename
+	    best_dist = dist
+      pic_list.append(best_file)
+
+   return pic_list
+
+
+def paint_group(src_image, dest_image, group):
+   '''Uses the node group as a maskk to paint src_image onto dest_image'''
+   mask = group.get_mask()
+   x1,y1,x2,y2 = group.get_bounding_box()
+   dest_image.paste(src_image, box=(x1,y1,x2+1,y2+1), mask = mask)
+
 
 if __name__ == '__main__':
     DEFAULT_SPLIT_THRESH = 1200

@@ -47,5 +47,9 @@ class TestColorZoner(unittest.TestCase):
       paste_img.save(mask_file, 'PNG')   
       print 'Saved %s' % mask_file
 
+
+      # TODO
+      # test get_pictures_for_groups and paint_group
+
 if __name__ == '__main__':
    unittest.main()

@@ -3,9 +3,7 @@
 
 # vim files
 *.*~
-*.swp
-*.swq
-*.swr
+*.sw[a-z]
 
 # Compiled source #
 ###################
