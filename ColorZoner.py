@@ -70,17 +70,16 @@ def generate_quad_tree(image, thresh, minsize):
 
    return rootNode
 
-'''
-Helper function for generate_leaf_groups
-'''
 def expand_group(ref_node, root, group_thresh):
+   '''Helper function for generate_leaf_groups'''
+
    q = deque()
    q.append(root)
    group = ref_node.group # must not be None
 
    while len(q) > 0:
       node = q.popleft()
-      if node == ref_node: # or node.group != None:
+      if node == ref_node or node.group != None:
 	 continue
       # check for "collision"
       if node.y2 < ref_node.y1 - 1 or \
@@ -101,8 +100,8 @@ def expand_group(ref_node, root, group_thresh):
          for child in [node.nw_child, node.ne_child, node.se_child, node.sw_child]:
 	    q.append(child)
 
-'''Output a list of node groups'''
 def generate_leaf_groups(root, group_thresh):
+   '''Output a list of node groups'''
    groups = []
    q = deque()
    q.append(root)
@@ -127,9 +126,6 @@ def generate_leaf_groups(root, group_thresh):
 	    q.append(child)
    
    return groups
-
-
-
 
 def draw_quadtree_leaf_colors(root, size):
    image = Image.new('RGB', size)

@@ -1,3 +1,5 @@
+# TODO make this into unit tests for the ColorZoner class
+
 from ColorZoner import generate_quad_tree, generate_leaf_groups, draw_quadtree_leaf_colors, draw_group_colors
 import Image, ImageDraw
 
