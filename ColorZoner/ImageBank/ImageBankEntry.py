@@ -31,4 +31,5 @@ class ImageBankEntry:
         return cls(filename, width, height, mean, var)
 
     def __str__(self):
+        print self.mean, self.filename
         return 'ImageBankEntry data: ' + self.to_csv()

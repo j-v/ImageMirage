@@ -1,4 +1,5 @@
 # TODO make better exceptions
+# TODO I had a problem when trying add_image_file on a gif, add to issues
 
 import ImageStat
 import Image
@@ -71,7 +72,9 @@ class ImageBank:
 
         # read image
         image = Image.open(file_path)
+        image = image.convert('RGB')
         stats = ImageStat.Stat(image)
+
         width, height = image.size
 
         # copy file
