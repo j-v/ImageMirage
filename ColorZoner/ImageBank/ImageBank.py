@@ -98,7 +98,6 @@ class ImageBank:
         except IOError:
             print 'Error opening file or writing data'
         else:
-            print 'Image bank saved'
             f.close()
 
     def load(self):

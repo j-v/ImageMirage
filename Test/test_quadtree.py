@@ -1,11 +1,12 @@
 import unittest
-
-from ColorZoner.ColorZoner import generate_quad_tree, generate_leaf_groups, draw_quadtree_leaf_colors, draw_group_colors
+from ColorZoner.QuadTree.QuadTreeFunctions import (
+    generate_quad_tree, generate_leaf_groups,
+    draw_quadtree_leaf_colors, draw_group_colors)
 import Image
 from os import path
 
 
-class TestColorZoner(unittest.TestCase):
+class TestQuadTree(unittest.TestCase):
     def setUp(self):
         self.image_dir = 'test'
 

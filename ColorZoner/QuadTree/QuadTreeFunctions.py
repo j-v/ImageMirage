@@ -4,17 +4,7 @@ import math
 import argparse
 
 from QuadTree import QuadTreeNode, NodeGroup
-
-
-def magnitude_3d_euclid(v):
-    '''Calculate 3d euclidian magnitude of the vector v
-    arg v: indexable of length 3
-    '''
-    return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-
-
-def distance_3d_euclid(v1, v2):
-    return magnitude_3d_euclid(tuple(v2[i] - v1[i] for i in range(3)))
+from ColorZoner import Math
 
 
 def generate_quad_tree(image, thresh, minsize):
@@ -39,7 +29,7 @@ def generate_quad_tree(image, thresh, minsize):
         if node.x2 - node.x1 < minsize or node.y2 - node.y1 < minsize:
             continue
         # Check thresh condition
-        elif magnitude_3d_euclid(node.var) < thresh:
+        elif Math.magnitude_3d_euclid(node.var) < thresh:
             continue
         else:
             # expand node
@@ -98,7 +88,7 @@ def expand_group(ref_node, root, group_thresh):
             for i in range(3):
                 mean_diff[i] = group.mean[i] - node.mean[i]
 
-            if magnitude_3d_euclid(mean_diff) < group_thresh:
+            if Math.magnitude_3d_euclid(mean_diff) < group_thresh:
                 group.add_node(node)
                 group.refresh_stats()
         else:
@@ -107,7 +97,9 @@ def expand_group(ref_node, root, group_thresh):
 
 
 def generate_leaf_groups(root, group_thresh):
-    '''Output a list of node groups'''
+    '''generate_leaf_groups(QuadTreeNode, float) -> list(NodeGroup)
+
+    Output a list of node groups, by joining leaves within a certain threshold'''
     groups = []
     q = deque()
     q.append(root)
@@ -169,37 +161,6 @@ def draw_group_colors(groups, size):
     return image
 
 
-def get_pictures_for_groups(groups, image_bank):
-    '''get_pictures_for_groups(list(NodeGroup)) -> list(str)
-
-    returns a list of filenames, in the same order as the groups,
-    corresponding to best fit for color'''
-
-    pic_list = []
-
-    # if image_bank has no entries
-    if len(image_bank.entries) == 0:
-        raise Exception("Image bank must contain at least one entry")  # TODO
-
-    for group in groups:
-        best_file = None
-        best_dist = float('inf')
-        for entry in image_bank.entries:
-            dist = distance_3d_euclid(group.mean, entry.mean)
-            if dist < best_dist:
-                best_file = entry.filename
-                best_dist = dist
-        pic_list.append(best_file)
-
-    return pic_list
-
-
-def paint_group(src_image, dest_image, group):
-    '''Uses the node group as a maskk to paint src_image onto dest_image'''
-    mask = group.get_mask()
-    x1, y1, x2, y2 = group.get_bounding_box()
-    dest_image.paste(src_image, box=(x1, y1, x2 + 1, y2 + 1), mask = mask)
-
 
 def main():
     DEFAULT_SPLIT_THRESH = 1200
@@ -240,4 +201,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # TODO Delete main function?
     main()
