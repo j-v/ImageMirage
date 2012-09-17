@@ -49,9 +49,39 @@ class TestQuadTree(unittest.TestCase):
         paste_img.save(mask_file, 'PNG')
         print 'Saved %s' % mask_file
 
+    @unittest.skip("Incorrect implementation") #TODO
+    def test_groups_dont_intersect(self):
+        in_file = path.join(self.image_dir, 'kirk.jpg')
 
-        # TODO
-        # test get_pictures_for_groups and paint_group
+        splitthresh = 1500  # 1200 # Lower means fewer nodes are split, faster algo
+        minsize = 5  # Lower means higher detail in splitting, slower algo
+        groupthresh = 40  # 80 # Lower means fewer nodes are grouped back together, faster algo
+
+        img = Image.open(in_file)
+        print 'Generating quad tree on %s' % in_file
+        root = generate_quad_tree(img, splitthresh, minsize)
+        print 'Making leaf groups...'
+        groups = generate_leaf_groups(root, groupthresh)
+
+        # check groups for overlapping
+        overlapping = False
+        for i in range(len(groups)):
+            g1 = groups[i]
+            b1x1, b1y1, b1x2, b1y2 = g1.get_bounding_box()
+            for j in range(i+1, len(groups)):
+                b2x1, b2y1, b2x2, b2y2 = groups[j].get_bounding_box()
+                if b1y2 < b2y1 or \
+                        b1y1 > b2y2 or \
+                        b1x2 < b2x1 or \
+                        b1x1 > b2x2:
+                            continue
+                overlapping = True
+                print 'Group %d and group %d overlap' % (i, j)
+                print 'box %d: %d %d %d %d' % (i, b1x1, b1y1, b1x2, b1y2)
+                print 'box %d: %d %d %d %d' % (j, b2x1, b2y1, b2x2, b2y2)
+
+        self.assertFalse(overlapping)
+
 
 if __name__ == '__main__':
     unittest.main()

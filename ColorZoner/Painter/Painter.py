@@ -16,7 +16,7 @@ def paint_group(src_image, dest_image, group):
         print 'bad width'
         # hope this doesn't happen for now
         # TODO should use tiling
-        pass
+        return
     elif width < src_width:
         # crop src_image horizontally
         # src_image = src_image.crop((0,0,width,src_height))
@@ -25,7 +25,7 @@ def paint_group(src_image, dest_image, group):
         print 'bad height'
         # hope this doesn't happen for now
         # TODO use tiling?
-        pass
+        return
     elif height < src_height:
         # crop src_image vertically
         # src_image = src_image.crop((0,0,src_width,height))
@@ -73,6 +73,7 @@ class Painter(object):
             self.group_thresh)
 
     def get_pictures_for_groups(self):
+        print 'Painter: getting pictures for groups'
         ''' Builds a list a list of filenames, in the same order as the groups,
         corresponding to best fit for color '''
 
@@ -99,6 +100,7 @@ class Painter(object):
             self.pic_list.append(best_file)
 
     def paint(self):
+        print 'Painter: painting'
         if self.pic_list == None:
             raise Exception("pic list must be generated before calling Painter.paint")
         for group, pic in zip(self.node_groups, self.pic_list):
