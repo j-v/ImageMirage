@@ -1,5 +1,6 @@
 import unittest
-from ColorZoner.Painter.Painter import Painter
+from ColorZoner.Painter.Painter import Painter, resize_tile_img
+import Image
 from os import path
 
 
@@ -9,6 +10,25 @@ class TestPainter(unittest.TestCase):
     def setUp(self):
         self.image_dir = ('Test')
         self.image_bank_dir = path.join('Test','color_bank')
+
+
+    def test_tiling(self):
+        src_img_path = path.join(self.image_dir, 'kirk.jpg')
+        dest_img_path = path.join(self.image_dir, 'kirk_tiled.png')
+
+        src_img = Image.open(src_img_path)
+        src_width, src_height = src_img.size
+        dest_width = int(src_width * 2.5)
+        dest_height = int(src_height * 3.5)
+        dest_img_size = (dest_width, dest_height)
+        dest_img = resize_tile_img(src_img, dest_img_size)
+
+        result_width, result_height = dest_img.size
+        self.assertEqual(result_width, dest_width)
+        self.assertEqual(result_height, dest_height)
+
+        dest_img.save(dest_img_path)
+
 
     def test_painter(self):
         src_img_path = path.join(self.image_dir, 'kirk.jpg')
