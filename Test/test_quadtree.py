@@ -49,7 +49,6 @@ class TestQuadTree(unittest.TestCase):
         paste_img.save(mask_file, 'PNG')
         print 'Saved %s' % mask_file
 
-    @unittest.skip("Incorrect implementation") #TODO
     def test_groups_dont_intersect(self):
         in_file = path.join(self.image_dir, 'kirk.jpg')
 
@@ -64,21 +63,21 @@ class TestQuadTree(unittest.TestCase):
         groups = generate_leaf_groups(root, groupthresh)
 
         # check groups for overlapping
+        print 'Checking for overlapping groups'
         overlapping = False
         for i in range(len(groups)):
-            g1 = groups[i]
-            b1x1, b1y1, b1x2, b1y2 = g1.get_bounding_box()
             for j in range(i+1, len(groups)):
-                b2x1, b2y1, b2x2, b2y2 = groups[j].get_bounding_box()
-                if b1y2 < b2y1 or \
-                        b1y1 > b2y2 or \
-                        b1x2 < b2x1 or \
-                        b1x1 > b2x2:
-                            continue
-                overlapping = True
-                print 'Group %d and group %d overlap' % (i, j)
-                print 'box %d: %d %d %d %d' % (i, b1x1, b1y1, b1x2, b1y2)
-                print 'box %d: %d %d %d %d' % (j, b2x1, b2y1, b2x2, b2y2)
+
+                for n1 in groups[i].nodes:
+                    for n2 in groups[j].nodes:
+                        if n1.y2 <= n2.y1 or \
+                                n1.y1 >= n2.y2 or \
+                                n1.x2 <= n2.x1 or \
+                                n1.x1 >= n2.x2:
+                                    continue
+                        overlapping = True
+                        print 'Found overlap in groups %d and %d: (%d,%d,%d,%d)(%d,%d,%d,%d)' % (
+                                i, j, n1.x1, n1.y1, n1.x2, n1.y2, n2.x1, n2.y1, n2.x2, n2.y2)
 
         self.assertFalse(overlapping)
 
