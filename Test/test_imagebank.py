@@ -21,9 +21,11 @@ class TestColorZoner(unittest.TestCase):
         if path.exists(self.csv_path):
             os.remove(self.csv_path)
             # remove all other files in folder too
+            # except ones beginning with a dot (e.g. .gitignore)
             for filename in os.listdir(self.bank_path):
-                os.remove(path.join(
-                    self.bank_path, filename))  # DELETES A FILE PERMANENTLY
+                if not filename.startswith('.'):
+                    os.remove(path.join(
+                        self.bank_path, filename))  # DELETES A FILE PERMANENTLY
 
         # Create new empty image bank
         imagebank = ImageBank.new(self.bank_path)
