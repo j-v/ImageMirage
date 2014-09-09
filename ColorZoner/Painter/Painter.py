@@ -50,7 +50,7 @@ def paint_group(src_image, dest_image, group):
 class Painter(object):
     """Painter class wraps QuadTree and ImageBank"""
     def __init__(self, src_img_path, imagebank_path,
-                 split_thresh=1200, minsize=10, group_thresh=75):
+                 split_thresh=1200, minsize=10, group_thresh=75, scale=1.0):
         self.src_img_path = src_img_path
         self.imagebank_path = imagebank_path
         self.split_thresh = split_thresh
@@ -59,6 +59,11 @@ class Painter(object):
 
         # load the source image
         self.src_img = Image.open(src_img_path)
+        if scale != 1.0:
+            width = (int)(self.src_img.size[0] * scale)
+            height = (int)(self.src_img.size[1] * scale)
+            self.src_img = self.src_img.resize((width, height), Image.ANTIALIAS)
+
         # Initialize destination image
         self.dest_image = Image.new('RGB', self.src_img.size)
 
