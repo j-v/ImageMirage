@@ -2,7 +2,7 @@ import scripts_init
 import argparse
 from ColorZoner.Painter.Painter import Painter
 
-def do_paint(src_file, dest_file, imagebank, split_thresh, minsize, group_thresh, scale):
+def do_paint(src_file, dest_file, imagebank, split_thresh, minsize, group_thresh, scale, bankscale):
     painter = Painter(src_file,
                       imagebank,
                       split_thresh,
@@ -12,7 +12,7 @@ def do_paint(src_file, dest_file, imagebank, split_thresh, minsize, group_thresh
 
     painter.generate_groups()
     painter.get_pictures_for_groups()
-    painter.paint()
+    painter.paint(bankscale) 
 
     painter.dest_image.save(dest_file, 'PNG')
 
@@ -36,6 +36,9 @@ def main():
     parser.add_argument('-s', '--scale', metavar="SCALE", type=float,
                         default=DEFAULT_SCALE,
                         help='Scale input image by this factor')
+    parser.add_argument('-b', '--bankscale', metavar="BANK_SCALE", type=float,
+                        default=DEFAULT_SCALE,
+                        help='Scale painted images by this factor')
     parser.add_argument(
         '-g', '--groupthresh', type=int, default=DEFAULT_GROUP_THRESH,
         help='Threshold for joining groups together')
@@ -46,7 +49,7 @@ def main():
     args = parser.parse_args()
 
     do_paint(args.in_file, args.out_file, args.img_bank, args.splitthresh,
-             args.minsize, args.groupthresh, args.scale)
+             args.minsize, args.groupthresh, args.scale, args.bankscale)
 
 if __name__ == '__main__':
     main()

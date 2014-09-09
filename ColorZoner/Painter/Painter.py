@@ -35,16 +35,7 @@ def resize_tile_img(image, size):
         return image
 
 
-def paint_group(src_image, dest_image, group):
-    '''Uses the node group as a maskk to paint src_image onto dest_image'''
-    mask = group.get_mask()
-    x1, y1, x2, y2 = group.get_bounding_box()
-    width, height = x2 + 1 - x1, y2 + 1 - y1
-    paint_image = resize_tile_img(src_image, (width, height))
 
-    dest_image.paste(paint_image,
-                     box=(x1, y1, x1 + width, y1 + height),
-                     mask = mask)
 
 
 class Painter(object):
@@ -113,12 +104,34 @@ class Painter(object):
                     best_dist = dist
             self.pic_list.append(best_file)
 
-    def paint(self):
+    def paint(self, scale=1.0):
         print 'Painter: painting'
+
         if self.pic_list is None:
             raise Exception(
                 "pic list must be generated before calling Painter.paint")
+        pic_cache = {} 
         for group, pic in zip(self.node_groups, self.pic_list):
             pic_path = os.path.join(self.imagebank.directory, pic)
-            pic = Image.open(pic_path)
-            paint_group(pic, self.dest_image, group)
+            if pic_path in pic_cache:
+                pic = pic_cache[pic_path]
+            else:
+                pic = Image.open(pic_path)
+                if scale != 1.0:
+                    width = (int)(pic.size[0] * scale)
+                    height = (int)(pic.size[1] * scale)
+                    pic = pic.resize((width, height), Image.ANTIALIAS)
+
+                pic_cache[pic_path] = pic
+            self.paint_group(pic, self.dest_image, group)
+
+    def paint_group(self, src_image, dest_image, group):
+        '''Uses the node group as a maskk to paint src_image onto dest_image'''
+        mask = group.get_mask()
+        x1, y1, x2, y2 = group.get_bounding_box()
+        width, height = x2 + 1 - x1, y2 + 1 - y1
+        paint_image = resize_tile_img(src_image, (width, height)) # TODO cache the tile image?
+
+        dest_image.paste(paint_image,
+                         box=(x1, y1, x1 + width, y1 + height),
+                         mask = mask)
