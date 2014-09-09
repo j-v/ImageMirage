@@ -59,13 +59,17 @@ class Painter(object):
 
         # load the source image
         self.src_img = Image.open(src_img_path)
+        print 'Painter: loaded source image'
+
         if scale != 1.0:
             width = (int)(self.src_img.size[0] * scale)
             height = (int)(self.src_img.size[1] * scale)
             self.src_img = self.src_img.resize((width, height), Image.ANTIALIAS)
+            print 'Painter: scaled source image'
 
         # Initialize destination image
         self.dest_image = Image.new('RGB', self.src_img.size)
+        print 'Painter: initialized destination image'
 
         # load the image bank
         self.imagebank = ImageBank.open(imagebank_path)
