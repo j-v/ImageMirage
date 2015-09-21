@@ -1,4 +1,4 @@
-MoreSight
+ImageMirage
 =========
 
 Dependencies:
